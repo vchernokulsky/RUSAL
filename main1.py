@@ -35,10 +35,25 @@ def generate_y(t):
     y = np.sin(2 * np.pi * t) * np.exp(- (rand_deg/10)/ rand)
     return y
 
+def makeMSG(dev_id):
+    ARRAY = [0x02, 0x30, 0x33, 0x30, 0x30, 0x30, 0x30, 0x31, 0x30, 0x31, 0x43, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+             0x30, 0x30, 0x30, 0x31, 0x03]
+    chk = ARRAY[0]
+    ARRAY[2] = 0x30 + dev_id
+    for m in ARRAY:
+        chk = chk ^ m
+    ARRAY.append(chk)
+    return ARRAY
+
 def main():
-    MESSAGE = b'\x02\x30\x33\x30\x30\x30\x30\x31\x30\x31\x43\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x31\x03\x42'
-    print MESSAGE[1]
-"""
+    dev_id = 3
+
+    msg = makeMSG(dev_id)
+
+    print msg
+
+
+    """
     f = [0 for i in range(6)]
     values = [0 for i in range(6)]
     t = 0

@@ -1,88 +1,63 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import random
+#!/usr/bin/env python
+import socket
 import time
 
-
-"""
-
-fig, ax = plt.subplots()
-ax.grid()
-
-x = np.arange(0, 2*np.pi, 0.01)
-line, = ax.plot(x, np.sin(x))
-
-
-def animate(i):
-    line.set_ydata(np.sin(x + i/10.0))  # update the data
-    return line,
-
-
-# Init only required for blitting to give a clean slate.
-def init():
-    line.set_ydata(np.ma.array(x, mask=True))
-    return line,
-
-ani = animation.FuncAnimation(fig, animate, np.arange(1, 200), init_func=init, interval=25, blit=False)
-plt.show()
-"""
-
-
-def generate_y(t):
-    rand = random.uniform(1, 10)
-    rand_deg = random.uniform(5, 10)
-    y = np.sin(2 * np.pi * t) * np.exp(- (rand_deg/10)/ rand)
-    return y
+# application constants
+TCP_IP = '192.168.0.110'
+TCP_PORT = 9999
+BUFFER_SIZE = 1024
 
 def make_cwf_msg(dev_id):
-    array = [0x02, 0x30, 0x33, 0x30, 0x30, 0x30, 0x30, 0x31, 0x30, 0x31, 0x43, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
-             0x30, 0x30, 0x30, 0x31, 0x03]
-    chk = array[0]
-    array[2] = 0x30 + dev_id
-    for m in array:
+    # array template without CHK byte
+    arr = [0x02, 0x30, 0x33, 0x30, 0x30, 0x30, 0x30, 0x31, 0x30, 0x31, 0x43, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+           0x30, 0x30, 0x30, 0x31, 0x03]
+    chk = arr[0]
+    arr[2] = 0x30 + dev_id
+    for m in arr:
         chk = chk ^ m
-    array.append(chk)
-    return array
+    arr.append(chk)
+    return arr
+
+def get_temp_from_cwf(cwf_data):
+    raw_data = cwf_data[19:-2]
+    str_data = str(raw_data)
+    temperature = int(str_data, 16)
+    return temperature
+
+def save_data_to_file(fname, temp):
+    try:
+        f = open(fname, 'a')
+        f.write(str(temp / 10.0) + "\n")
+        f.close()
+    except IOError:
+        print ("No file")
 
 def main():
-    dev_id = 3
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((TCP_IP, TCP_PORT))
 
-    msg = make_cwf_msg(dev_id)
+    delta = 0
+    base_id = 1
+    while True:
+        dev_id = base_id + delta
+        array = make_cwf_msg(dev_id)
+        message = ''.join(chr(ch) for ch in array)
+        print("send data: " + message.decode("ascii"))
 
-    print msg
-
-
-    """
-    f = [0 for i in range(6)]
-    values = [0 for i in range(6)]
-    t = 0
-    cnt = 0
-    for i in range(6):
-        filename = "y" + str(i + 1) + ".rtf"
         try:
-            f[i] = open(filename, 'w')
-            f[i].close()
-        except IOError:
-            print ("No file")
+            sock.settimeout(1.5)
+            sock.send(message)
+            data = sock.recv(BUFFER_SIZE)
 
-    while cnt < 5000:
-        cnt += 1
-        t += 0.05
-        for i in range(6):
-            filename = "y"+str(i+1)+".rtf"
-            try:
-                f[i] = open(filename, 'a')
-                int_to_write = generate_y(t)
-                str_to_wtite = str(int_to_write)
-                values[i] = int_to_write
-                f[i].write(str(str_to_wtite)+"\n")
-                f[i].close()
-            except IOError:
-                print ("No file")
-        print t, ": ", values
-        time.sleep(1)
-"""
+            t = get_temp_from_cwf(data)  # temperature as integer value
+            fname = "y" + str(message[2]) + ".rtf"
+            save_data_to_file(fname, t)
+        except socket.error, exc:
+            print("Caught exception socket.error : %s" % exc)
+        # increment OMRON module ID
+        delta = (delta + 1) % 5
+        time.sleep(0.7)
+    sock.close()
 
 if __name__ == '__main__':
     main()

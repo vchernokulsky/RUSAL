@@ -4,6 +4,7 @@ import time
 import sys
 import random
 import numpy as np
+import datetime
 
 # application constants
 TCP_IP = '192.168.0.110'
@@ -42,8 +43,9 @@ def get_temp_from_cwf(cwf_data):
 
 def save_data_to_file(fname, temp):
     try:
+        t = str(datetime.datetime.now().time()).split(':')
         f = open(fname, 'a')
-        f.write(str(temp / 10.0) + "\n")
+        f.write(str(t[0]) + ':' + str(t[1]) + ";" + str(temp / 10.0) + "\n")
         f.close()
     except IOError:
         print ("No file")

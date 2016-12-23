@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import random
 import time
+import re
+import datetime
 
 
 def generate_y(t):
@@ -16,8 +18,10 @@ def read_data_y(ind):
     f = open(filename)
     last_line = f.readlines()[-1]
     f.close()
-    y = float(last_line)
-    return y
+    last_line = (re.sub("^\s+|\n|\r|\s+$", '', last_line)).split(';')
+    t = datetime.datetime.strptime(last_line[0].split('.')[0],'%H:%M:%S')
+    y = float(last_line[1])
+    return t,y
 
 
 def data_gen():
@@ -25,10 +29,13 @@ def data_gen():
     cnt = 0
     while cnt < 5000:
         cnt += 1
-        t += 0.05
+        #t = datetime.datetime.now().time()
         #y1 = np.sin(2*np.pi*t) * np.exp(-t/random.uniform(1, 10))
         #y = [generate_y(t), generate_y(t), generate_y(t), generate_y(t), generate_y(t), generate_y(t)]
-        y = [read_data_y(1), read_data_y(2), read_data_y(3), read_data_y(4), read_data_y(5), read_data_y(6)]
+        temp = [read_data_y(1), read_data_y(2), read_data_y(3), read_data_y(4), read_data_y(5), read_data_y(6)]
+        print temp[:,0]
+        t = temp[:,0]
+        y = temp[:,1]
         print t, ": ", y
         # adapted the data generator to yield both sin and cos
         yield t, y
@@ -96,9 +103,9 @@ def run(data):
     # axis limits checking. Same as before, just for both axes
     for ax in ax_array:
         xmin, xmax = ax.get_xlim()
-        if t >= xmax:
-            ax.set_xlim(xmin+(xmax-xmin)/2, xmax+(xmax-xmin)/2)
-            ax.figure.canvas.draw()
+        #if t >= xmax:
+         #   ax.set_xlim(xmin+(xmax-xmin)/2, xmax+(xmax-xmin)/2)
+          #  ax.figure.canvas.draw()
 
     # update the data of both line objects
     n = min(len(line), len(y_data))

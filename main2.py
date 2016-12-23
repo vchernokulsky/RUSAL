@@ -53,7 +53,7 @@ def init():
 
 
 # create a figure with two subplots
-#fig, ax_array = plt.subplots(3,2)
+# fig, ax_array = plt.subplots(3,2)
 fig = plt.figure()
 ax1 = fig.add_subplot(3, 2, 1)
 ax1.title.set_text('Plot 1')
